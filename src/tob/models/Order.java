@@ -58,12 +58,4 @@ public class Order {
     public String getKey(){
         return String.join(";", this.userId, this.clorderId);
     }
-
-    public String getPriceKey(){
-        return String.join(";", this.instrumentId.toString(), this.side.toString(), this.price.toString());
-    }
-
-    public String getBestPriceKey(){
-        return String.join(";", this.getInstrumentId().toString(), this.getSide().toString());
-    }
 }
