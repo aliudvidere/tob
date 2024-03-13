@@ -4,12 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="dde244c3-3e8e-4067-8f31-a68bc58d2317" name="Changes" comment="half optimize">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/TOBTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/TOBTest.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/tob/models/PriceUnit.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/tob/models/PriceUnit.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/tob/service/TOB.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/tob/service/TOB.java" afterDir="false" />
-    </list>
+    <list default="true" id="dde244c3-3e8e-4067-8f31-a68bc58d2317" name="Changes" comment="Optimization" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -78,6 +73,15 @@
     </key>
   </component>
   <component name="RunManager" selected="JUnit.TOBTest.shouldCopeWith1mlnOrders1">
+    <configuration name="TOBTest" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
+      <module name="tob" />
+      <option name="PACKAGE_NAME" value="" />
+      <option name="MAIN_CLASS_NAME" value="TOBTest" />
+      <option name="TEST_OBJECT" value="class" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
     <configuration name="TOBTest.getBestPriceLimitBuy" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
       <module name="tob" />
       <option name="PACKAGE_NAME" value="" />
@@ -93,16 +97,6 @@
       <option name="PACKAGE_NAME" value="" />
       <option name="MAIN_CLASS_NAME" value="TOBTest" />
       <option name="METHOD_NAME" value="getBestPriceLimitSell" />
-      <option name="TEST_OBJECT" value="method" />
-      <method v="2">
-        <option name="Make" enabled="true" />
-      </method>
-    </configuration>
-    <configuration name="TOBTest.getBestPriceSell" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
-      <module name="tob" />
-      <option name="PACKAGE_NAME" value="" />
-      <option name="MAIN_CLASS_NAME" value="TOBTest" />
-      <option name="METHOD_NAME" value="getBestPriceSell" />
       <option name="TEST_OBJECT" value="method" />
       <method v="2">
         <option name="Make" enabled="true" />
@@ -132,9 +126,9 @@
       <list>
         <item itemvalue="JUnit.TOBTest.shouldCopeWith1mlnOrders1" />
         <item itemvalue="JUnit.TOBTest.shouldCopeWith1mlnOrders" />
+        <item itemvalue="JUnit.TOBTest" />
         <item itemvalue="JUnit.TOBTest.getBestPriceLimitSell" />
         <item itemvalue="JUnit.TOBTest.getBestPriceLimitBuy" />
-        <item itemvalue="JUnit.TOBTest.getBestPriceSell" />
       </list>
     </recent_temporary>
   </component>
@@ -156,7 +150,15 @@
       <option name="project" value="LOCAL" />
       <updated>1710346011436</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="Optimization">
+      <option name="closed" value="true" />
+      <created>1710346609197</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1710346609197</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -164,14 +166,15 @@
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="half optimize" />
-    <option name="LAST_COMMIT_MESSAGE" value="half optimize" />
+    <MESSAGE value="Optimization" />
+    <option name="LAST_COMMIT_MESSAGE" value="Optimization" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
       <breakpoints>
         <line-breakpoint enabled="true" type="java-line">
           <url>file://$PROJECT_DIR$/src/tob/service/TOB.java</url>
-          <line>91</line>
+          <line>94</line>
           <option name="timeStamp" value="35" />
         </line-breakpoint>
       </breakpoints>
