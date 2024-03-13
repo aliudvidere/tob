@@ -67,4 +67,24 @@ public class TOBTest {
         result = tob.getBestPrice("A;3;0;55;S;101;4;4");
         assertEquals("55;S;101;4", result);
     }
+
+    @Test
+    public void shouldCopeWith1mlnOrders(){
+        TOB tob = new TOB();
+        for (int i = 0; i < 1_000_000; i++){
+            tob.getBestPrice("user;ord%d;0;123;S;101;3;3".formatted(i));
+        }
+        var result = tob.getBestPrice("user;ord0;1;123;S;101;3;0");
+        assertEquals("101", result.split(";")[2]);
+    }
+
+    @Test
+    public void shouldCopeWith1mlnOrders1(){
+        TOB tob = new TOB();
+        for (int i = 0; i < 1_000_000; i++){
+            tob.getBestPrice("user;ord%d;0;123;B;%d;3;3".formatted(i, 100 + i));
+        }
+        var result = tob.getBestPrice("user;ord0;1;123;B;100;3;0");
+        assertEquals("-", result);
+    }
 }

@@ -1,53 +1,30 @@
 package tob.models;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collections;
+import java.util.TreeMap;
 
 public class PriceUnit {
-    private final Integer instrumentId;
-    private final Character side;
-    private final Long price;
-    private final List<Order> orders = new ArrayList<>();
+    private TreeMap<String, Order> orders;
+    private Integer amount;
 
-    public Integer getInstrumentId() {
-        return instrumentId;
-    }
-
-    public Character getSide() {
-        return side;
-    }
-
-    public Long getPrice() {
-        return price;
+    public TreeMap<String, Order> getOrders() {
+        return orders;
     }
 
     public Integer getAmount() {
-        return this.orders.stream().mapToInt(Order::getAmountRest).sum();
+        return amount;
     }
 
     public PriceUnit(Order order){
-        this.instrumentId = order.getInstrumentId();
-        this.side = order.getSide();
-        this.price = order.getPrice();
-        this.orders.add(order);
+        this.orders = new TreeMap<>(Collections.singletonMap(order.getKey(), order));
+        this.amount = 0;
     }
 
-    public PriceUnit (Order order, Long price){
-        this.instrumentId = order.getInstrumentId();
-        this.side = order.getSide();
-        this.price = price;
+    public void increaseAmount(Integer amount){
+        this.amount += amount;
     }
 
-    public String getKey(){
-        return String.join(";", this.getInstrumentId().toString(), this.getSide().toString(), this.getPrice().toString());
-    }
-
-    public void addOrder(Order order){
-        this.orders.add(order);
-    }
-
-    @Override
-    public String toString(){
-        return String.join(";", this.getInstrumentId().toString(), this.getSide().toString(), this.getPrice().toString(), this.getAmount().toString());
+    public void decreaseAmount(Integer amount){
+        this.amount -= amount;
     }
 }

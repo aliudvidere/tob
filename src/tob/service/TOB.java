@@ -12,7 +12,7 @@ import static tob.enums.Side.BUY;
 import static tob.enums.Side.SELL;
 
 public class TOB {
-    private final TreeMap<Character, TreeMap<Integer, TreeMap<Long, TreeMap<String, Order>>>> orders = new TreeMap<>();
+    private final TreeMap<Character, TreeMap<Integer, TreeMap<Long, PriceUnit>>> priceUnits = new TreeMap<>();
 
 
     public String getBestPrice(String input){
@@ -31,18 +31,19 @@ public class TOB {
         Character side = order.getSide();
         Integer instrumentId = order.getInstrumentId();
         Long price = order.getPrice();
-        TreeMap<Integer, TreeMap<Long, TreeMap<String, Order>>> sideMap = orders.get(side);
-        TreeMap<Long, TreeMap<String, Order>> priceMap = sideMap.get(instrumentId);
+        TreeMap<Integer, TreeMap<Long, PriceUnit>> sideMap = priceUnits.get(side);
+        TreeMap<Long, PriceUnit> priceMap = sideMap.get(instrumentId);
         if (priceMap == null){
             priceMap = new TreeMap<>();
-            priceMap.put(price, new TreeMap<>(Collections.singletonMap(order.getKey(), order)));
+            PriceUnit priceUnit = new PriceUnit(order);
+            priceUnit.increaseAmount(order.getAmount());
+            priceMap.put(price, priceUnit);
             sideMap.put(instrumentId, priceMap);
         }
         else{
-            TreeMap<String, Order> currentOrders = priceMap.computeIfAbsent(price, k -> new TreeMap<>());
-            currentOrders.put(order.getKey(), order);
+            PriceUnit priceUnit = priceMap.computeIfAbsent(price, k -> new PriceUnit(order));
+            priceUnit.increaseAmount(order.getAmount());
         }
-
         return getBestPriceBySide(side, instrumentId, priceMap, price);
     }
 
@@ -50,11 +51,13 @@ public class TOB {
         Character side = order.getSide();
         Integer instrumentId = order.getInstrumentId();
         Long price = order.getPrice();
-        TreeMap<Integer, TreeMap<Long, TreeMap<String, Order>>> sideMap = orders.get(side);
-        TreeMap<Long, TreeMap<String, Order>> priceMap = sideMap.get(instrumentId);
-        TreeMap<String, Order> currentOrders = priceMap.get(price);
+        TreeMap<Integer, TreeMap<Long, PriceUnit>> sideMap = priceUnits.get(side);
+        TreeMap<Long, PriceUnit> priceMap = sideMap.get(instrumentId);
+        PriceUnit currentPriceUnit = priceMap.get(price);
+        TreeMap<String, Order> currentOrders = currentPriceUnit.getOrders();
         Order currentOrder = currentOrders.get(order.getKey());
         currentOrder.setAmountRest(currentOrder.getAmountRest() - order.getAmount());
+        currentPriceUnit.decreaseAmount(order.getAmount());
         return getBestPriceBySide(side, instrumentId, priceMap, price);
     }
 
@@ -63,8 +66,8 @@ public class TOB {
     }
 
     private void initialisation(){
-        orders.put(BUY.getSide(), new TreeMap<>());
-        orders.put(SELL.getSide(), new TreeMap<>());
+        priceUnits.put(BUY.getSide(), new TreeMap<>());
+        priceUnits.put(SELL.getSide(), new TreeMap<>());
     }
     private static Long getLimitPrice(Character side){
         if (BUY.equals(side)){
@@ -75,7 +78,7 @@ public class TOB {
         }
     }
 
-    private String getBestPriceBySide(Character side, Integer instrumentId, TreeMap<Long, TreeMap<String, Order>> priceMap, Long price){
+    private String getBestPriceBySide(Character side, Integer instrumentId, TreeMap<Long, PriceUnit> priceMap, Long price){
         Long bestPrice;
         if (BUY.equals(side)) {
             bestPrice = priceMap.lastKey();
@@ -89,7 +92,7 @@ public class TOB {
                 return "-";
             }
         }
-        int amount = priceMap.get(price).values().stream().mapToInt(Order::getAmountRest).sum();
+        int amount = priceMap.get(price).getAmount();
         if (amount == 0) {
             priceMap.remove(price);
             if (priceMap.isEmpty()){
@@ -97,7 +100,7 @@ public class TOB {
             }
             else {
                 bestPrice = BUY.equals(side) ? priceMap.lastKey() : priceMap.firstKey();
-                amount = priceMap.get(bestPrice).values().stream().mapToInt(Order::getAmountRest).sum();
+                amount = priceMap.get(bestPrice).getAmount();
             }
         }
         return String.join(";", instrumentId.toString(), side.toString(), bestPrice.toString(), Integer.toString(amount));
