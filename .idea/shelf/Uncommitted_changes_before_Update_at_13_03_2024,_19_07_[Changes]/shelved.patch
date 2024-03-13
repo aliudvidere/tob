@@ -1,0 +1,300 @@
+Index: src/TOBTest.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>import org.junit.Test;\nimport tob.service.TOB;\n\nimport static org.junit.Assert.*;\n\npublic class TOBTest {\n\n    @Test\n    public void getBestPriceBuy() {\n        TOB tob = new TOB();\n        String result = tob.getBestPrice(\"A;1;0;55;B;100;2;2\");\n        assertEquals(\"55;B;100;2\", result);\n        result = tob.getBestPrice(\"A;2;0;55;B;101;3;3\");\n        assertEquals(\"55;B;101;3\", result);\n        result = tob.getBestPrice(\"B;1;0;55;B;99;10;10\");\n        assertEquals(\"-\", result);\n        result = tob.getBestPrice(\"A;2;1;55;B;101;3;0\");\n        assertEquals(\"55;B;100;2\", result);\n        result = tob.getBestPrice(\"B;2;0;55;B;100;3;3\");\n        assertEquals(\"55;B;100;5\", result);\n        result = tob.getBestPrice(\"A;1;2;55;B;100;1;1\");\n        assertEquals(\"55;B;100;4\", result);\n    }\n\n    @Test\n    public void getBestPriceSeveralInstruments() {\n        TOB tob = new TOB();\n        String result = tob.getBestPrice(\"A;1;0;55;B;100;2;2\");\n        assertEquals(\"55;B;100;2\", result);\n        result = tob.getBestPrice(\"C;1;0;56;B;105;3;3\");\n        assertEquals(\"56;B;105;3\", result);\n        result = tob.getBestPrice(\"A;2;0;55;B;101;3;3\");\n        assertEquals(\"55;B;101;3\", result);\n        result = tob.getBestPrice(\"D;1;0;56;B;108;5;5\");\n        assertEquals(\"56;B;108;5\", result);\n    }\n\n    @Test\n    public void getBestPriceSell() {\n        TOB tob = new TOB();\n        String result = tob.getBestPrice(\"A;1;0;55;S;100;2;2\");\n        assertEquals(\"55;S;100;2\", result);\n        result = tob.getBestPrice(\"B;1;0;55;S;99;10;10\");\n        assertEquals(\"55;S;99;10\", result);\n        result = tob.getBestPrice(\"A;2;0;55;S;101;3;3\");\n        assertEquals(\"-\", result);\n    }\n\n    @Test\n    public void getBestPriceLimitBuy() {\n        TOB tob = new TOB();\n        String result = tob.getBestPrice(\"A;2;0;55;B;101;3;3\");\n        assertEquals(\"55;B;101;3\", result);\n        result = tob.getBestPrice(\"A;2;1;55;B;101;3;0\");\n        assertEquals(\"55;B;0;0\", result);\n        result = tob.getBestPrice(\"A;3;0;55;B;101;4;4\");\n        assertEquals(\"55;B;101;4\", result);\n    }\n\n    @Test\n    public void getBestPriceLimitSell() {\n        TOB tob = new TOB();\n        String result = tob.getBestPrice(\"A;2;0;55;S;101;3;3\");\n        assertEquals(\"55;S;101;3\", result);\n        result = tob.getBestPrice(\"A;2;1;55;S;101;3;0\");\n        assertEquals(\"55;S;999999999999999999;0\", result);\n        result = tob.getBestPrice(\"A;3;0;55;S;101;4;4\");\n        assertEquals(\"55;S;101;4\", result);\n    }\n}
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/src/TOBTest.java b/src/TOBTest.java
+--- a/src/TOBTest.java	(revision a174f21432d2ed2b6fb024eab2e026a3a5bd1eba)
++++ b/src/TOBTest.java	(date 1710345905825)
+@@ -67,4 +67,24 @@
+         result = tob.getBestPrice("A;3;0;55;S;101;4;4");
+         assertEquals("55;S;101;4", result);
+     }
++
++    @Test
++    public void shouldCopeWith1mlnOrders(){
++        TOB tob = new TOB();
++        for (int i = 0; i < 1_00000; i++){
++            tob.getBestPrice("user;ord%d;0;123;S;101;3;3".formatted(i));
++        }
++        var result = tob.getBestPrice("user;ord0;1;123;S;101;3;0");
++        assertEquals("101", result.split(";")[2]);
++    }
++
++    @Test
++    public void shouldCopeWith1mlnOrders1(){
++        TOB tob = new TOB();
++        for (int i = 0; i < 1_000_000; i++){
++            tob.getBestPrice("user;ord%d;0;123;B;%d;3;3".formatted(i, 100 + i));
++        }
++        var result = tob.getBestPrice("user;ord0;1;123;B;100;3;0");
++        assertEquals("-", result);
++    }
+ }
+\ No newline at end of file
+Index: src/tob/models/PriceUnit.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package tob.models;\n\nimport java.util.ArrayList;\nimport java.util.List;\n\npublic class PriceUnit {\n    private final Integer instrumentId;\n    private final Character side;\n    private final Long price;\n    private final List<Order> orders = new ArrayList<>();\n\n    public Integer getInstrumentId() {\n        return instrumentId;\n    }\n\n    public Character getSide() {\n        return side;\n    }\n\n    public Long getPrice() {\n        return price;\n    }\n\n    public Integer getAmount() {\n        return this.orders.stream().mapToInt(Order::getAmountRest).sum();\n    }\n\n    public PriceUnit(Order order){\n        this.instrumentId = order.getInstrumentId();\n        this.side = order.getSide();\n        this.price = order.getPrice();\n        this.orders.add(order);\n    }\n\n    public PriceUnit (Order order, Long price){\n        this.instrumentId = order.getInstrumentId();\n        this.side = order.getSide();\n        this.price = price;\n    }\n\n    public String getKey(){\n        return String.join(\";\", this.getInstrumentId().toString(), this.getSide().toString(), this.getPrice().toString());\n    }\n\n    public void addOrder(Order order){\n        this.orders.add(order);\n    }\n\n    @Override\n    public String toString(){\n        return String.join(\";\", this.getInstrumentId().toString(), this.getSide().toString(), this.getPrice().toString(), this.getAmount().toString());\n    }\n}\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/src/tob/models/PriceUnit.java b/src/tob/models/PriceUnit.java
+--- a/src/tob/models/PriceUnit.java	(revision a174f21432d2ed2b6fb024eab2e026a3a5bd1eba)
++++ b/src/tob/models/PriceUnit.java	(date 1710344465381)
+@@ -1,53 +1,30 @@
+ package tob.models;
+ 
+-import java.util.ArrayList;
+-import java.util.List;
++import java.util.Collections;
++import java.util.TreeMap;
+ 
+ public class PriceUnit {
+-    private final Integer instrumentId;
+-    private final Character side;
+-    private final Long price;
+-    private final List<Order> orders = new ArrayList<>();
+-
+-    public Integer getInstrumentId() {
+-        return instrumentId;
+-    }
++    private TreeMap<String, Order> orders;
++    private Integer amount;
+ 
+-    public Character getSide() {
+-        return side;
+-    }
+-
+-    public Long getPrice() {
+-        return price;
++    public TreeMap<String, Order> getOrders() {
++        return orders;
+     }
+ 
+     public Integer getAmount() {
+-        return this.orders.stream().mapToInt(Order::getAmountRest).sum();
++        return amount;
+     }
+ 
+     public PriceUnit(Order order){
+-        this.instrumentId = order.getInstrumentId();
+-        this.side = order.getSide();
+-        this.price = order.getPrice();
+-        this.orders.add(order);
+-    }
+-
+-    public PriceUnit (Order order, Long price){
+-        this.instrumentId = order.getInstrumentId();
+-        this.side = order.getSide();
+-        this.price = price;
+-    }
+-
+-    public String getKey(){
+-        return String.join(";", this.getInstrumentId().toString(), this.getSide().toString(), this.getPrice().toString());
++        this.orders = new TreeMap<>(Collections.singletonMap(order.getKey(), order));
++        this.amount = order.getAmount();
+     }
+ 
+-    public void addOrder(Order order){
+-        this.orders.add(order);
++    public void increaseAmount(Integer amount){
++        this.amount += amount;
+     }
+ 
+-    @Override
+-    public String toString(){
+-        return String.join(";", this.getInstrumentId().toString(), this.getSide().toString(), this.getPrice().toString(), this.getAmount().toString());
++    public void decreaseAmount(Integer amount){
++        this.amount -= amount;
+     }
+ }
+Index: .idea/workspace.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<project version=\"4\">\n  <component name=\"AutoImportSettings\">\n    <option name=\"autoReloadType\" value=\"SELECTIVE\" />\n  </component>\n  <component name=\"ChangeListManager\">\n    <list default=\"true\" id=\"dde244c3-3e8e-4067-8f31-a68bc58d2317\" name=\"Changes\" comment=\"\">\n      <change afterPath=\"$PROJECT_DIR$/.idea/libraries/junit.xml\" afterDir=\"false\" />\n      <change afterPath=\"$PROJECT_DIR$/.idea/uiDesigner.xml\" afterDir=\"false\" />\n      <change afterPath=\"$PROJECT_DIR$/.idea/vcs.xml\" afterDir=\"false\" />\n      <change afterPath=\"$PROJECT_DIR$/.idea/workspace.xml\" afterDir=\"false\" />\n      <change afterPath=\"$PROJECT_DIR$/src/Main.java\" afterDir=\"false\" />\n      <change afterPath=\"$PROJECT_DIR$/src/TOBTest.java\" afterDir=\"false\" />\n      <change afterPath=\"$PROJECT_DIR$/src/tob/Constants.java\" afterDir=\"false\" />\n      <change afterPath=\"$PROJECT_DIR$/src/tob/enums/Action.java\" afterDir=\"false\" />\n      <change afterPath=\"$PROJECT_DIR$/src/tob/enums/Side.java\" afterDir=\"false\" />\n      <change afterPath=\"$PROJECT_DIR$/src/tob/models/Order.java\" afterDir=\"false\" />\n      <change afterPath=\"$PROJECT_DIR$/src/tob/models/PriceUnit.java\" afterDir=\"false\" />\n      <change afterPath=\"$PROJECT_DIR$/src/tob/service/TOB.java\" afterDir=\"false\" />\n      <change afterPath=\"$PROJECT_DIR$/tob.iml\" afterDir=\"false\" />\n    </list>\n    <option name=\"SHOW_DIALOG\" value=\"false\" />\n    <option name=\"HIGHLIGHT_CONFLICTS\" value=\"true\" />\n    <option name=\"HIGHLIGHT_NON_ACTIVE_CHANGELIST\" value=\"false\" />\n    <option name=\"LAST_RESOLUTION\" value=\"IGNORE\" />\n  </component>\n  <component name=\"FileTemplateManagerImpl\">\n    <option name=\"RECENT_TEMPLATES\">\n      <list>\n        <option value=\"Interface\" />\n        <option value=\"Class\" />\n        <option value=\"JUnit5 Test Class\" />\n        <option value=\"JUnit4 Test Class\" />\n      </list>\n    </option>\n  </component>\n  <component name=\"Git.Settings\">\n    <option name=\"RECENT_GIT_ROOT_PATH\" value=\"$PROJECT_DIR$\" />\n  </component>\n  <component name=\"ProjectId\" id=\"2dRbnCefqQ4RkB4C6d2UYrx0gWP\" />\n  <component name=\"ProjectLevelVcsManager\" settingsEditedManually=\"true\" />\n  <component name=\"ProjectViewState\">\n    <option name=\"autoscrollFromSource\" value=\"true\" />\n    <option name=\"autoscrollToSource\" value=\"true\" />\n    <option name=\"hideEmptyMiddlePackages\" value=\"true\" />\n    <option name=\"showLibraryContents\" value=\"true\" />\n  </component>\n  <component name=\"PropertiesComponent\"><![CDATA[{\n  \"keyToString\": {\n    \"Downloaded.Files.Path.Enabled\": \"false\",\n    \"Repository.Attach.Annotations\": \"false\",\n    \"Repository.Attach.JavaDocs\": \"false\",\n    \"Repository.Attach.Sources\": \"false\",\n    \"RunOnceActivity.OpenProjectViewOnStart\": \"true\",\n    \"RunOnceActivity.ShowReadmeOnStart\": \"true\",\n    \"SHARE_PROJECT_CONFIGURATION_FILES\": \"true\",\n    \"WebServerToolWindowFactoryState\": \"false\",\n    \"com.intellij.testIntegration.createTest.CreateTestDialog.defaultLibrary\": \"JUnit4\",\n    \"com.intellij.testIntegration.createTest.CreateTestDialog.defaultLibrarySuperClass.JUnit4\": \"\",\n    \"com.intellij.testIntegration.createTest.CreateTestDialog.defaultLibrarySuperClass.JUnit5\": \"\",\n    \"create.test.in.the.same.root\": \"true\",\n    \"node.js.detected.package.eslint\": \"true\",\n    \"node.js.detected.package.tslint\": \"true\",\n    \"node.js.selected.package.eslint\": \"(autodetect)\",\n    \"node.js.selected.package.tslint\": \"(autodetect)\",\n    \"project.structure.last.edited\": \"Libraries\",\n    \"project.structure.proportion\": \"0.0\",\n    \"project.structure.side.proportion\": \"0.0\",\n    \"vue.rearranger.settings.migration\": \"true\"\n  }\n}]]></component>\n  <component name=\"RecentsManager\">\n    <key name=\"CreateTestDialog.Recents.Supers\">\n      <recent name=\"\" />\n    </key>\n    <key name=\"CreateTestDialog.RecentsKey\">\n      <recent name=\"\" />\n    </key>\n    <key name=\"CopyClassDialog.RECENTS_KEY\">\n      <recent name=\"models\" />\n      <recent name=\"enums\" />\n    </key>\n  </component>\n  <component name=\"RunManager\" selected=\"JUnit.TOBTest\">\n    <configuration name=\"Main\" type=\"Application\" factoryName=\"Application\" temporary=\"true\" nameIsGenerated=\"true\">\n      <option name=\"MAIN_CLASS_NAME\" value=\"Main\" />\n      <module name=\"tob\" />\n      <method v=\"2\">\n        <option name=\"Make\" enabled=\"true\" />\n      </method>\n    </configuration>\n    <configuration name=\"TOBTest\" type=\"JUnit\" factoryName=\"JUnit\" temporary=\"true\" nameIsGenerated=\"true\">\n      <module name=\"tob\" />\n      <option name=\"PACKAGE_NAME\" value=\"\" />\n      <option name=\"MAIN_CLASS_NAME\" value=\"TOBTest\" />\n      <option name=\"TEST_OBJECT\" value=\"class\" />\n      <method v=\"2\">\n        <option name=\"Make\" enabled=\"true\" />\n      </method>\n    </configuration>\n    <configuration name=\"TOBTest.getBestPriceLimitBuy\" type=\"JUnit\" factoryName=\"JUnit\" temporary=\"true\" nameIsGenerated=\"true\">\n      <module name=\"tob\" />\n      <option name=\"PACKAGE_NAME\" value=\"\" />\n      <option name=\"MAIN_CLASS_NAME\" value=\"TOBTest\" />\n      <option name=\"METHOD_NAME\" value=\"getBestPriceLimitBuy\" />\n      <option name=\"TEST_OBJECT\" value=\"method\" />\n      <method v=\"2\">\n        <option name=\"Make\" enabled=\"true\" />\n      </method>\n    </configuration>\n    <configuration name=\"TOBTest.getBestPriceSell\" type=\"JUnit\" factoryName=\"JUnit\" temporary=\"true\" nameIsGenerated=\"true\">\n      <module name=\"tob\" />\n      <option name=\"PACKAGE_NAME\" value=\"\" />\n      <option name=\"MAIN_CLASS_NAME\" value=\"TOBTest\" />\n      <option name=\"METHOD_NAME\" value=\"getBestPriceSell\" />\n      <option name=\"TEST_OBJECT\" value=\"method\" />\n      <method v=\"2\">\n        <option name=\"Make\" enabled=\"true\" />\n      </method>\n    </configuration>\n    <configuration name=\"TOBTest.getBestPriceSeveralInstruments\" type=\"JUnit\" factoryName=\"JUnit\" temporary=\"true\" nameIsGenerated=\"true\">\n      <module name=\"tob\" />\n      <option name=\"PACKAGE_NAME\" value=\"\" />\n      <option name=\"MAIN_CLASS_NAME\" value=\"TOBTest\" />\n      <option name=\"METHOD_NAME\" value=\"getBestPriceSeveralInstruments\" />\n      <option name=\"TEST_OBJECT\" value=\"method\" />\n      <method v=\"2\">\n        <option name=\"Make\" enabled=\"true\" />\n      </method>\n    </configuration>\n    <recent_temporary>\n      <list>\n        <item itemvalue=\"JUnit.TOBTest\" />\n        <item itemvalue=\"JUnit.TOBTest.getBestPriceLimitBuy\" />\n        <item itemvalue=\"JUnit.TOBTest.getBestPriceSell\" />\n        <item itemvalue=\"Application.Main\" />\n        <item itemvalue=\"JUnit.TOBTest.getBestPriceSeveralInstruments\" />\n      </list>\n    </recent_temporary>\n  </component>\n  <component name=\"SpellCheckerSettings\" RuntimeDictionaries=\"0\" Folders=\"0\" CustomDictionaries=\"0\" DefaultDictionary=\"application-level\" UseSingleDictionary=\"true\" transferred=\"true\" />\n  <component name=\"TaskManager\">\n    <task active=\"true\" id=\"Default\" summary=\"Default task\">\n      <changelist id=\"dde244c3-3e8e-4067-8f31-a68bc58d2317\" name=\"Changes\" comment=\"\" />\n      <created>1709974002923</created>\n      <option name=\"number\" value=\"Default\" />\n      <option name=\"presentableId\" value=\"Default\" />\n      <updated>1709974002923</updated>\n      <workItem from=\"1709974003952\" duration=\"21151000\" />\n    </task>\n    <servers />\n  </component>\n  <component name=\"TypeScriptGeneratedFilesManager\">\n    <option name=\"version\" value=\"3\" />\n  </component>\n  <component name=\"XDebuggerManager\">\n    <breakpoint-manager>\n      <breakpoints>\n        <line-breakpoint enabled=\"true\" type=\"java-line\">\n          <url>file://$PROJECT_DIR$/src/tob/service/TOB.java</url>\n          <line>18</line>\n          <option name=\"timeStamp\" value=\"11\" />\n        </line-breakpoint>\n      </breakpoints>\n    </breakpoint-manager>\n  </component>\n</project>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/workspace.xml b/.idea/workspace.xml
+--- a/.idea/workspace.xml	(revision a174f21432d2ed2b6fb024eab2e026a3a5bd1eba)
++++ b/.idea/workspace.xml	(date 1710345892894)
+@@ -5,19 +5,10 @@
+   </component>
+   <component name="ChangeListManager">
+     <list default="true" id="dde244c3-3e8e-4067-8f31-a68bc58d2317" name="Changes" comment="">
+-      <change afterPath="$PROJECT_DIR$/.idea/libraries/junit.xml" afterDir="false" />
+-      <change afterPath="$PROJECT_DIR$/.idea/uiDesigner.xml" afterDir="false" />
+-      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+-      <change afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+-      <change afterPath="$PROJECT_DIR$/src/Main.java" afterDir="false" />
+-      <change afterPath="$PROJECT_DIR$/src/TOBTest.java" afterDir="false" />
+-      <change afterPath="$PROJECT_DIR$/src/tob/Constants.java" afterDir="false" />
+-      <change afterPath="$PROJECT_DIR$/src/tob/enums/Action.java" afterDir="false" />
+-      <change afterPath="$PROJECT_DIR$/src/tob/enums/Side.java" afterDir="false" />
+-      <change afterPath="$PROJECT_DIR$/src/tob/models/Order.java" afterDir="false" />
+-      <change afterPath="$PROJECT_DIR$/src/tob/models/PriceUnit.java" afterDir="false" />
+-      <change afterPath="$PROJECT_DIR$/src/tob/service/TOB.java" afterDir="false" />
+-      <change afterPath="$PROJECT_DIR$/tob.iml" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/src/TOBTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/TOBTest.java" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/src/tob/models/PriceUnit.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/tob/models/PriceUnit.java" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/src/tob/service/TOB.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/tob/service/TOB.java" afterDir="false" />
+     </list>
+     <option name="SHOW_DIALOG" value="false" />
+     <option name="HIGHLIGHT_CONFLICTS" value="true" />
+@@ -45,30 +36,30 @@
+     <option name="hideEmptyMiddlePackages" value="true" />
+     <option name="showLibraryContents" value="true" />
+   </component>
+-  <component name="PropertiesComponent"><![CDATA[{
+-  "keyToString": {
+-    "Downloaded.Files.Path.Enabled": "false",
+-    "Repository.Attach.Annotations": "false",
+-    "Repository.Attach.JavaDocs": "false",
+-    "Repository.Attach.Sources": "false",
+-    "RunOnceActivity.OpenProjectViewOnStart": "true",
+-    "RunOnceActivity.ShowReadmeOnStart": "true",
+-    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
+-    "WebServerToolWindowFactoryState": "false",
+-    "com.intellij.testIntegration.createTest.CreateTestDialog.defaultLibrary": "JUnit4",
+-    "com.intellij.testIntegration.createTest.CreateTestDialog.defaultLibrarySuperClass.JUnit4": "",
+-    "com.intellij.testIntegration.createTest.CreateTestDialog.defaultLibrarySuperClass.JUnit5": "",
+-    "create.test.in.the.same.root": "true",
+-    "node.js.detected.package.eslint": "true",
+-    "node.js.detected.package.tslint": "true",
+-    "node.js.selected.package.eslint": "(autodetect)",
+-    "node.js.selected.package.tslint": "(autodetect)",
+-    "project.structure.last.edited": "Libraries",
+-    "project.structure.proportion": "0.0",
+-    "project.structure.side.proportion": "0.0",
+-    "vue.rearranger.settings.migration": "true"
++  <component name="PropertiesComponent">{
++  &quot;keyToString&quot;: {
++    &quot;Downloaded.Files.Path.Enabled&quot;: &quot;false&quot;,
++    &quot;Repository.Attach.Annotations&quot;: &quot;false&quot;,
++    &quot;Repository.Attach.JavaDocs&quot;: &quot;false&quot;,
++    &quot;Repository.Attach.Sources&quot;: &quot;false&quot;,
++    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
++    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
++    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
++    &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
++    &quot;com.intellij.testIntegration.createTest.CreateTestDialog.defaultLibrary&quot;: &quot;JUnit4&quot;,
++    &quot;com.intellij.testIntegration.createTest.CreateTestDialog.defaultLibrarySuperClass.JUnit4&quot;: &quot;&quot;,
++    &quot;com.intellij.testIntegration.createTest.CreateTestDialog.defaultLibrarySuperClass.JUnit5&quot;: &quot;&quot;,
++    &quot;create.test.in.the.same.root&quot;: &quot;true&quot;,
++    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
++    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
++    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
++    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
++    &quot;project.structure.last.edited&quot;: &quot;Libraries&quot;,
++    &quot;project.structure.proportion&quot;: &quot;0.0&quot;,
++    &quot;project.structure.side.proportion&quot;: &quot;0.0&quot;,
++    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+   }
+-}]]></component>
++}</component>
+   <component name="RecentsManager">
+     <key name="CreateTestDialog.Recents.Supers">
+       <recent name="" />
+@@ -77,52 +68,58 @@
+       <recent name="" />
+     </key>
+     <key name="CopyClassDialog.RECENTS_KEY">
++      <recent name="tob.models" />
++      <recent name="tob.service" />
+       <recent name="models" />
+       <recent name="enums" />
+     </key>
+   </component>
+-  <component name="RunManager" selected="JUnit.TOBTest">
+-    <configuration name="Main" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
+-      <option name="MAIN_CLASS_NAME" value="Main" />
++  <component name="RunManager" selected="JUnit.TOBTest.shouldCopeWith1mlnOrders">
++    <configuration name="TOBTest.getBestPriceLimitBuy" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
+       <module name="tob" />
++      <option name="PACKAGE_NAME" value="" />
++      <option name="MAIN_CLASS_NAME" value="TOBTest" />
++      <option name="METHOD_NAME" value="getBestPriceLimitBuy" />
++      <option name="TEST_OBJECT" value="method" />
+       <method v="2">
+         <option name="Make" enabled="true" />
+       </method>
+     </configuration>
+-    <configuration name="TOBTest" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
++    <configuration name="TOBTest.getBestPriceLimitSell" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
+       <module name="tob" />
+       <option name="PACKAGE_NAME" value="" />
+       <option name="MAIN_CLASS_NAME" value="TOBTest" />
+-      <option name="TEST_OBJECT" value="class" />
++      <option name="METHOD_NAME" value="getBestPriceLimitSell" />
++      <option name="TEST_OBJECT" value="method" />
+       <method v="2">
+         <option name="Make" enabled="true" />
+       </method>
+     </configuration>
+-    <configuration name="TOBTest.getBestPriceLimitBuy" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
++    <configuration name="TOBTest.getBestPriceSell" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
+       <module name="tob" />
+       <option name="PACKAGE_NAME" value="" />
+       <option name="MAIN_CLASS_NAME" value="TOBTest" />
+-      <option name="METHOD_NAME" value="getBestPriceLimitBuy" />
++      <option name="METHOD_NAME" value="getBestPriceSell" />
+       <option name="TEST_OBJECT" value="method" />
+       <method v="2">
+         <option name="Make" enabled="true" />
+       </method>
+     </configuration>
+-    <configuration name="TOBTest.getBestPriceSell" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
++    <configuration name="TOBTest.getBestPriceSeveralInstruments" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
+       <module name="tob" />
+       <option name="PACKAGE_NAME" value="" />
+       <option name="MAIN_CLASS_NAME" value="TOBTest" />
+-      <option name="METHOD_NAME" value="getBestPriceSell" />
++      <option name="METHOD_NAME" value="getBestPriceSeveralInstruments" />
+       <option name="TEST_OBJECT" value="method" />
+       <method v="2">
+         <option name="Make" enabled="true" />
+       </method>
+     </configuration>
+-    <configuration name="TOBTest.getBestPriceSeveralInstruments" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
++    <configuration name="TOBTest.shouldCopeWith1mlnOrders" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
+       <module name="tob" />
+       <option name="PACKAGE_NAME" value="" />
+       <option name="MAIN_CLASS_NAME" value="TOBTest" />
+-      <option name="METHOD_NAME" value="getBestPriceSeveralInstruments" />
++      <option name="METHOD_NAME" value="shouldCopeWith1mlnOrders" />
+       <option name="TEST_OBJECT" value="method" />
+       <method v="2">
+         <option name="Make" enabled="true" />
+@@ -130,10 +127,10 @@
+     </configuration>
+     <recent_temporary>
+       <list>
+-        <item itemvalue="JUnit.TOBTest" />
++        <item itemvalue="JUnit.TOBTest.shouldCopeWith1mlnOrders" />
++        <item itemvalue="JUnit.TOBTest.getBestPriceLimitSell" />
+         <item itemvalue="JUnit.TOBTest.getBestPriceLimitBuy" />
+         <item itemvalue="JUnit.TOBTest.getBestPriceSell" />
+-        <item itemvalue="Application.Main" />
+         <item itemvalue="JUnit.TOBTest.getBestPriceSeveralInstruments" />
+       </list>
+     </recent_temporary>
+@@ -158,8 +155,13 @@
+       <breakpoints>
+         <line-breakpoint enabled="true" type="java-line">
+           <url>file://$PROJECT_DIR$/src/tob/service/TOB.java</url>
+-          <line>18</line>
+-          <option name="timeStamp" value="11" />
++          <line>50</line>
++          <option name="timeStamp" value="28" />
++        </line-breakpoint>
++        <line-breakpoint enabled="true" type="java-line">
++          <url>file://$PROJECT_DIR$/src/tob/service/TOB.java</url>
++          <line>91</line>
++          <option name="timeStamp" value="35" />
+         </line-breakpoint>
+       </breakpoints>
+     </breakpoint-manager>
